@@ -1,0 +1,10 @@
+[package]
+name = "raft"
+version = "0.1.0"
+authors = ["René Perschon <rperschon85@gmail.com>"]
+
+[dependencies]
+actix-web = "0.6"
+log = "0.4"
+env_logger = "0.5"
+dotenv = "0.13"
