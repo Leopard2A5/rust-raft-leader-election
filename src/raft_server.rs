@@ -5,14 +5,21 @@ use std::fs::File;
 use std::io::Write;
 use serde_json;
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum ServerStatus {
+    Follower,
+}
+
 #[derive(Debug)]
 pub struct RaftServer {
+    status: ServerStatus,
     persistent_state: RwLock<PersistentState>
 }
 
 impl RaftServer {
     pub fn new() -> Self {
         RaftServer {
+            status: ServerStatus::Follower,
             persistent_state: RwLock::new(PersistentState {
                 current_term: 0,
                 voted_for: None,
