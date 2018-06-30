@@ -1,4 +1,5 @@
 use std::sync::RwLock;
+use messages::{AppendEntriesRequest, AppendEntriesResponse};
 
 #[derive(Debug)]
 pub struct RaftServer {
@@ -16,8 +17,12 @@ impl RaftServer {
         }
     }
 
-    pub fn increment_term(&self) {
-        self.persistent_state.write().unwrap().current_term += 1;
+    pub fn append_entries(&self, message: AppendEntriesRequest) -> AppendEntriesResponse {
+//        self.persistent_state.write().unwrap().current_term += 1;
+        AppendEntriesResponse {
+            term: 1,
+            success: true
+        }
     }
 }
 
@@ -29,6 +34,6 @@ struct PersistentState {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-enum LogEntry {
+pub enum LogEntry {
 
 }

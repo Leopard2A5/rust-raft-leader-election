@@ -7,15 +7,20 @@ extern crate serde;
 extern crate serde_json;
 
 mod raft_server;
+mod messages;
 
-use actix_web::{server,App,HttpRequest};
+use actix_web::{server,App,http};
 use std::env;
 use raft_server::RaftServer;
+use messages::*;
 use std::sync::Arc;
+use actix_web::Json;
+use actix_web::State;
 
-fn index(_req: HttpRequest<Arc<RaftServer>>) -> &'static str {
-    _req.state().increment_term();
-    "Hi!"
+fn append_entries((raft_server, body): (State<Arc<RaftServer>>, Json<AppendEntriesRequest>)) -> String {
+    serde_json::to_string(
+        &raft_server.append_entries(body.into_inner())
+    ).unwrap()
 }
 
 fn main() {
@@ -31,7 +36,7 @@ fn main() {
 
     server::new(move ||
         App::with_state(raft_server.clone())
-            .resource("/", |r| r.f(index)))
+            .resource("/raft/append-entries", |r| r.method(http::Method::POST).with(append_entries) ))
         .bind(&bind)
         .unwrap()
         .run();
