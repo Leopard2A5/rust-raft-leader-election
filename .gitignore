@@ -3,3 +3,5 @@
 .idea
 *.iml
 
+raft_persistent_state.json
+

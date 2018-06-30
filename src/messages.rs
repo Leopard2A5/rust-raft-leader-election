@@ -1,6 +1,4 @@
 use raft_server::LogEntry;
-use raft_server::RaftServer;
-use std::sync::Arc;
 use serde_json;
 use actix_web::{Responder, Error, HttpRequest, HttpResponse};
 
@@ -24,7 +22,7 @@ impl Responder for AppendEntriesResponse {
     type Item = HttpResponse;
     type Error = Error;
 
-    fn respond_to<S>(self, req: &HttpRequest<S>) -> Result<Self::Item, Self::Error> {
+    fn respond_to<S>(self, _req: &HttpRequest<S>) -> Result<Self::Item, Self::Error> {
         let body = serde_json::to_string(&self)?;
         Ok(
             HttpResponse::Ok()

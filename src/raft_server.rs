@@ -1,5 +1,9 @@
 use std::sync::RwLock;
 use messages::{AppendEntriesRequest, AppendEntriesResponse};
+use std::cmp;
+use std::fs::File;
+use std::io::Write;
+use serde_json;
 
 #[derive(Debug)]
 pub struct RaftServer {
@@ -18,9 +22,20 @@ impl RaftServer {
     }
 
     pub fn append_entries(&self, message: AppendEntriesRequest) -> AppendEntriesResponse {
-//        self.persistent_state.write().unwrap().current_term += 1;
+        let term_response;
+        {
+            let mut persistent_state = self.persistent_state.write().unwrap();
+
+            persistent_state.current_term = cmp::max(persistent_state.current_term, message.term);
+            term_response = persistent_state.current_term;
+
+            let mut file = File::create("raft_persistent_state.json").unwrap();
+            let json = serde_json::to_string(&*persistent_state).unwrap();
+            file.write(json.as_bytes()).unwrap();
+        }
+
         AppendEntriesResponse {
-            term: 1,
+            term: term_response,
             success: true
         }
     }
