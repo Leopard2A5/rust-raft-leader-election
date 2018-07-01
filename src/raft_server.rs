@@ -22,18 +22,7 @@ pub struct RaftServer {
 
 impl RaftServer {
     pub fn new() -> Self {
-        let persistent_state = if Path::new(PERSISTENT_STORAGE_FILENAME).exists() {
-            let mut file = File::open(PERSISTENT_STORAGE_FILENAME).unwrap();
-            let mut bytes = vec![];
-            file.read_to_end(&mut bytes).unwrap();
-            serde_json::from_slice::<PersistentState>(&bytes).unwrap()
-        } else {
-            PersistentState {
-                current_term: 0,
-                voted_for: None,
-                log: vec![]
-            }
-        };
+        let persistent_state = load_persistent_state();
 
         RaftServer {
             status: ServerStatus::Follower,
@@ -57,6 +46,21 @@ impl RaftServer {
         AppendEntriesResponse {
             term: term_response,
             success: true
+        }
+    }
+}
+
+fn load_persistent_state() -> PersistentState {
+    if Path::new(PERSISTENT_STORAGE_FILENAME).exists() {
+        let mut file = File::open(PERSISTENT_STORAGE_FILENAME).unwrap();
+        let mut bytes = vec![];
+        file.read_to_end(&mut bytes).unwrap();
+        serde_json::from_slice::<PersistentState>(&bytes).unwrap()
+    } else {
+        PersistentState {
+            current_term: 0,
+            voted_for: None,
+            log: vec![]
         }
     }
 }
