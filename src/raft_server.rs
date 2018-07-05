@@ -1,14 +1,16 @@
+use messages::*;
 use std::sync::RwLock;
-use messages::{AppendEntriesRequest, AppendEntriesResponse};
 use std::cmp;
 use std::fs::File;
 use std::path::Path;
-use std::io::Write;
-use std::io::Read;
 use serde_json;
-use actix::Actor;
-use actix::Handler;
-use actix::Context;
+use actix::{
+    Actor,
+    Handler,
+    Context,
+    SpawnHandle,
+    AsyncContext,
+};
 
 const PERSISTENT_STORAGE_FILENAME: &'static str = "raft_persistent_state.json";
 
@@ -20,7 +22,8 @@ pub enum ServerStatus {
 #[derive(Debug)]
 pub struct RaftServer {
     status: ServerStatus,
-    persistent_state: RwLock<PersistentState>
+    persistent_state: RwLock<PersistentState>,
+    heartbeat_timeout_handle: Option<SpawnHandle>
 }
 
 impl RaftServer {
@@ -29,22 +32,54 @@ impl RaftServer {
 
         RaftServer {
             status: ServerStatus::Follower,
-            persistent_state: RwLock::new(persistent_state)
+            persistent_state: RwLock::new(persistent_state),
+            heartbeat_timeout_handle: None
         }
     }
 
-    pub fn append_entries(&self, message: AppendEntriesRequest) -> AppendEntriesResponse {
+    fn schedule_timeout(&mut self, ctx: &mut Context<Self>) {
+        use std::time::Duration;
+
+        info!("schedule timeout!");
+        self.heartbeat_timeout_handle = Some(
+            ctx.notify_later(HeartbeatTimeout, Duration::new(5, 0))
+        );
+    }
+}
+
+impl Actor for RaftServer {
+    type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        info!("STARTED!");
+        self.schedule_timeout(ctx);
+    }
+}
+
+impl Handler<AppendEntriesRequest> for RaftServer {
+    type Result = AppendEntriesResponse;
+
+    fn handle(&mut self, msg: AppendEntriesRequest, ctx: &mut Self::Context) -> Self::Result {
+        use std::io::Write;
+
         let term_response;
         {
             let mut persistent_state = self.persistent_state.write().unwrap();
 
-            persistent_state.current_term = cmp::max(persistent_state.current_term, message.term);
+            persistent_state.current_term = cmp::max(persistent_state.current_term, msg.term);
             term_response = persistent_state.current_term;
 
             let mut file = File::create(PERSISTENT_STORAGE_FILENAME).unwrap();
             let json = serde_json::to_string(&*persistent_state).unwrap();
             file.write(json.as_bytes()).unwrap();
         }
+
+        if let Some(handle) = self.heartbeat_timeout_handle {
+            info!("cancel timeout!");
+            ctx.cancel_future(handle);
+        }
+
+        self.schedule_timeout(ctx);
 
         AppendEntriesResponse {
             term: term_response,
@@ -53,23 +88,18 @@ impl RaftServer {
     }
 }
 
-impl Actor for RaftServer {
-    type Context = Context<Self>;
+impl Handler<HeartbeatTimeout> for RaftServer {
+    type Result = ();
 
-    fn started(&mut self, _ctx: &mut Self::Context) {
-        info!("STARTED!");
-    }
-}
-
-impl Handler<AppendEntriesRequest> for RaftServer {
-    type Result = AppendEntriesResponse;
-
-    fn handle(&mut self, msg: AppendEntriesRequest, _ctx: &mut Self::Context) -> Self::Result {
-        self.append_entries(msg)
+    fn handle(&mut self, _msg: HeartbeatTimeout, _ctx: &mut Self::Context) -> <Self as Handler<HeartbeatTimeout>>::Result {
+        info!("TIMEOUT!");
+        ()
     }
 }
 
 fn load_persistent_state() -> PersistentState {
+    use std::io::Read;
+
     if Path::new(PERSISTENT_STORAGE_FILENAME).exists() {
         let mut file = File::open(PERSISTENT_STORAGE_FILENAME).unwrap();
         let mut bytes = vec![];
