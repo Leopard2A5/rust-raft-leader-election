@@ -6,6 +6,9 @@ use std::path::Path;
 use std::io::Write;
 use std::io::Read;
 use serde_json;
+use actix::Actor;
+use actix::Handler;
+use actix::Context;
 
 const PERSISTENT_STORAGE_FILENAME: &'static str = "raft_persistent_state.json";
 
@@ -47,6 +50,22 @@ impl RaftServer {
             term: term_response,
             success: true
         }
+    }
+}
+
+impl Actor for RaftServer {
+    type Context = Context<Self>;
+
+    fn started(&mut self, _ctx: &mut Self::Context) {
+        info!("STARTED!");
+    }
+}
+
+impl Handler<AppendEntriesRequest> for RaftServer {
+    type Result = AppendEntriesResponse;
+
+    fn handle(&mut self, msg: AppendEntriesRequest, _ctx: &mut Self::Context) -> Self::Result {
+        self.append_entries(msg)
     }
 }
 
