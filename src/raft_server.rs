@@ -62,7 +62,11 @@ impl Actor for RaftServer {
 impl Handler<AppendEntriesRequest> for RaftServer {
     type Result = AppendEntriesResponse;
 
-    fn handle(&mut self, msg: AppendEntriesRequest, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(
+        &mut self,
+        msg: AppendEntriesRequest,
+        ctx: &mut Self::Context
+    ) -> Self::Result {
         use std::io::Write;
 
         let term_response;
@@ -94,9 +98,25 @@ impl Handler<AppendEntriesRequest> for RaftServer {
 impl Handler<HeartbeatTimeout> for RaftServer {
     type Result = ();
 
-    fn handle(&mut self, _msg: HeartbeatTimeout, _ctx: &mut Self::Context) -> <Self as Handler<HeartbeatTimeout>>::Result {
+    fn handle(
+        &mut self,
+        _msg: HeartbeatTimeout,
+        _ctx: &mut Self::Context
+    ) -> <Self as Handler<HeartbeatTimeout>>::Result {
         info!("TIMEOUT!");
         ()
+    }
+}
+
+impl Handler<RequestVoteRequest> for RaftServer {
+    type Result = RequestVoteResponse;
+
+    fn handle(
+        &mut self,
+        msg: RequestVoteRequest,
+        ctx: &mut Self::Context
+    ) -> <Self as Handler<RequestVoteRequest>>::Result {
+        unimplemented!()
     }
 }
 
