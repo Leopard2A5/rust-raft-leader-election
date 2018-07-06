@@ -1,4 +1,7 @@
-use messages::*;
+use ::Term;
+use append_entries::*;
+use heartbeat::*;
+use request_vote::*;
 use std::sync::RwLock;
 use std::cmp;
 use std::fs::File;
@@ -51,7 +54,7 @@ impl Actor for RaftServer {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        info!("STARTED!");
+        info!("Raft server started");
         self.schedule_timeout(ctx);
     }
 }
@@ -116,12 +119,12 @@ fn load_persistent_state() -> PersistentState {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct PersistentState {
-    current_term: i32,
+    current_term: Term,
     voted_for: Option<String>,
     log: Vec<LogEntry>
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum LogEntry {
 
 }

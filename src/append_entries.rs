@@ -1,3 +1,4 @@
+use ::Term;
 use raft_server::LogEntry;
 use serde_json;
 use actix_web::{Responder, Error, HttpRequest, HttpResponse};
@@ -7,14 +8,14 @@ use raft_server::RaftServer;
 use actix::dev::ResponseChannel;
 use actix::Actor;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct AppendEntriesRequest {
-    pub term: i32,
+    pub term: Term,
     pub leader_id: String,
-    pub prev_log_index: i32,
-    pub prev_log_term: i32,
+    pub prev_log_index: Term,
+    pub prev_log_term: Term,
     pub entries: Vec<LogEntry>,
-    pub leader_commit: i32
+    pub leader_commit: Term
 }
 
 impl Message for AppendEntriesRequest {
@@ -23,7 +24,7 @@ impl Message for AppendEntriesRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppendEntriesResponse {
-    pub term: i32,
+    pub term: Term,
     pub success: bool
 }
 
@@ -47,10 +48,4 @@ impl Responder for AppendEntriesResponse {
                 .body(body)
         )
     }
-}
-
-pub struct HeartbeatTimeout;
-
-impl Message for HeartbeatTimeout {
-    type Result = ();
 }
