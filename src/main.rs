@@ -7,6 +7,8 @@ extern crate serde;
 #[macro_use] extern crate serde_derive;
 extern crate serde_json;
 extern crate futures;
+extern crate reqwest;
+extern crate rand;
 
 mod raft_server;
 mod append_entries;
@@ -33,7 +35,8 @@ fn append_entries((raft, body): (State<Addr<Syn, RaftServer>>, Json<AppendEntrie
     Json(result.unwrap())
 }
 
-fn request_vote((raft, body): (State<Addr<Syn, RaftServer>>, Json<RequestVoteRequest>)) -> impl Responder {
+fn request_vote((_raft, body): (State<Addr<Syn, RaftServer>>, Json<RequestVoteRequest>)) -> impl Responder {
+    info!("Received RequestVote: {:?}", body);
     RequestVoteResponse {
         term: 0,
         vote_granted: false,
@@ -47,9 +50,15 @@ fn main() {
     let bind = env::var("BIND")
         .ok()
         .unwrap_or("0.0.0.0:8080".into());
+    let server_id = env::var("SERVER_ID")
+        .ok()
+        .unwrap();
+    let partner_address = env::var("PARTNER_ADDRESS")
+        .ok()
+        .unwrap();
 
     let sys = System::new("foo");
-    let raft: Addr<Syn, _> = RaftServer::new().start();
+    let raft: Addr<Syn, _> = RaftServer::new(server_id, partner_address).start();
     let _server = HttpServer::new(move ||
         App::with_state(raft.clone())
             .resource("/raft/append-entries", |r| r.method(http::Method::POST)

@@ -1,6 +1,10 @@
 use ::Term;
 use ::LogIndex;
+use raft_server::RaftServer;
+use actix::Actor;
+use actix::dev::MessageResponse;
 use actix::Message;
+use actix::dev::ResponseChannel;
 use actix_web::{Responder, Error, HttpRequest, HttpResponse};
 use serde_json;
 
@@ -20,6 +24,14 @@ impl Message for RequestVoteRequest {
 pub struct RequestVoteResponse {
     pub term: Term,
     pub vote_granted: bool
+}
+
+impl MessageResponse<RaftServer, RequestVoteRequest> for RequestVoteResponse {
+    fn handle<R: ResponseChannel<RequestVoteRequest>>(self, _ctx: &mut <RaftServer as Actor>::Context, tx: Option<R>) {
+        if let Some(chan) = tx {
+            chan.send(self)
+        }
+    }
 }
 
 impl Responder for RequestVoteResponse {

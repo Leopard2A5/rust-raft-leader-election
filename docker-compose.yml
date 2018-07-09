@@ -1,0 +1,15 @@
+---
+version: '3'
+services:
+  r1:
+    image: raft:latest
+    env_file: .env
+    environment:
+      SERVER_ID: r1
+      PARTNER_ADDRESS: http://r2:8080/raft/request-vote
+  r2:
+    image: raft:latest
+    env_file: .env
+    environment:
+      SERVER_ID: r2
+      PARTNER_ADDRESS: http://r1:8080/raft/request-vote
