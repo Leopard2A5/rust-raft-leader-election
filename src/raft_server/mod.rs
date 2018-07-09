@@ -15,6 +15,7 @@ use rand::prelude::*;
 mod impl_request_vote;
 mod impl_append_entries;
 mod impl_heartbeat_timeout;
+mod http_req;
 
 const PERSISTENT_STORAGE_FILENAME: &'static str = "raft_persistent_state.json";
 const HEARTBEAT_TIMEOUT_MIN: u64 = 3000;
@@ -23,6 +24,7 @@ const HEARTBEAT_TIMEOUT_MAX: u64 = 6000;
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ServerStatus {
     Follower,
+    Candidate,
 }
 
 #[derive(Debug)]
