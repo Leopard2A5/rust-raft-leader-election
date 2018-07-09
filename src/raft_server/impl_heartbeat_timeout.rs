@@ -1,7 +1,7 @@
 use actix::Handler;
 use request_vote::*;
 use heartbeat::HeartbeatTimeout;
-use raft_server::RaftServer;
+use raft_server::*;
 use raft_server::http_req::post;
 
 impl Handler<HeartbeatTimeout> for RaftServer {
@@ -12,6 +12,9 @@ impl Handler<HeartbeatTimeout> for RaftServer {
         _msg: HeartbeatTimeout,
         _ctx: &mut Self::Context
     ) -> <Self as Handler<HeartbeatTimeout>>::Result {
+        self.status = ServerStatus::Candidate;
+        self.persistent_state.write().unwrap().current_term += 1;
+
         let body = RequestVoteRequest {
             term: self.persistent_state.read().unwrap().current_term,
             candidate_id: self.server_id.clone(),
